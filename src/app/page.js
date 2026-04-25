@@ -259,29 +259,49 @@ export default function HomePage() {
             <div className="animate-fade-in" style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 24px 120px" }}>
               
               {/* Summary Hero */}
-              <div className="glass-card-strong" style={{ padding: "36px", marginBottom: "56px", position: "relative", overflow: "hidden" }}>
-                <div style={{
-                  position: "absolute", top: 0, left: 0, width: "3px", height: "100%",
-                  background: "linear-gradient(180deg, var(--color-primary), var(--color-cyan))",
-                  borderRadius: "0 2px 2px 0"
-                }} />
-                <h2 style={{ fontSize: "22px", fontWeight: "800", color: "var(--text-primary)", marginBottom: "14px", display: "flex", alignItems: "center", gap: "12px" }}>
-                  <span style={{ fontSize: "24px" }}>📝</span> The Analysis
-                </h2>
-                <p style={{ fontSize: "16px", lineHeight: "1.8", color: "var(--text-secondary)", fontWeight: "400" }}>
-                  {results.summary}
-                </p>
-                
-                <div style={{ display: "flex", justifyContent: "flex-start", marginTop: "28px" }}>
-                  <button
-  onClick={() => setActiveTab("graph")}
-  className="btn-primary"
-  style={{ background: "linear-gradient(135deg, #059669 0%, #10b981 100%)", boxShadow: "0 4px 24px rgba(16, 185, 129, 0.3)" }}
->
-  📊 View in Dashboard
-</button>
-                </div>
-              </div>
+             <div style={{ display: "flex", gap: "12px", justifyContent: "flex-start", marginTop: "28px", flexWrap: "wrap" }}>
+  <button
+    onClick={() => setActiveTab("graph")}
+    className="btn-primary"
+    style={{ background: "linear-gradient(135deg, #059669 0%, #10b981 100%)", boxShadow: "0 4px 24px rgba(16, 185, 129, 0.3)" }}
+  >
+    📊 View in Dashboard
+  </button>
+
+  <button
+    onClick={() => {
+      const exportData = {
+        goal: formData?.goal,
+        timeAvailable: formData?.timeAvailable,
+        savedAt: new Date().toISOString(),
+        knownSkills: results.knownSkills || [],
+        missingSkills: results.missingSkills || [],
+        learningPlan: results.learningPlan || [],
+        summary: results.summary || "",
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `skillpath_${(formData?.goal || "export").toLowerCase().replace(/\s+/g, "_")}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }}
+    className="btn-primary"
+    style={{
+      background: "rgba(139, 92, 246, 0.15)",
+      border: "1px solid rgba(139, 92, 246, 0.3)",
+      color: "var(--color-primary-light)",
+      boxShadow: "none",
+    }}
+    onMouseEnter={e => e.currentTarget.style.background = "rgba(139, 92, 246, 0.25)"}
+    onMouseLeave={e => e.currentTarget.style.background = "rgba(139, 92, 246, 0.15)"}
+  >
+    ⬇️ Download Path JSON
+  </button>
+</div>
 
               {/* Grid Section */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "56px" }}>
@@ -317,6 +337,7 @@ export default function HomePage() {
                       <span style={{ fontSize: "22px" }}>📅</span>
                       <h2 className="section-title" style={{ marginBottom: 0 }}>7-Day Learning Plan</h2>
                     </div>
+                    
                     <button
                       onClick={() => {
                         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(results.learningPlan, null, 2));
