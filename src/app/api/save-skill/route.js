@@ -6,32 +6,35 @@ const filePath = path.join(process.cwd(), "data", "skills.json");
 
 export async function POST(req) {
   try {
-    const skill = await req.json();
+    const payload = await req.json();
+    const skill = payload.skill || payload; // Support both nested {skill, source} and flat payloads
 
     if (!skill?.id || !skill?.name) {
-      return NextResponse.json({ error: "Invalid skill" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid skill payload" }, { status: 400 });
     }
 
     // Read existing file
     const file = await fs.readFile(filePath, "utf-8");
     const data = JSON.parse(file);
 
-    // 🔴 Deduplication (IMPORTANT)
+    // 🔴 Robust Deduplication
+    const normalize = (str) => (str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
     const exists = data.skills.find(
-      s => s.label.toLowerCase() === skill.name.toLowerCase()
+      s => normalize(s.label) === normalize(skill.name)
     );
 
     if (exists) {
       return NextResponse.json({ success: true, deduped: true });
     }
 
-    // Convert to your schema
+    // Convert to schema
     const newSkill = {
       id: skill.id,
       label: skill.name,
+      description: skill.description || "",
       needs: skill.needs || [],
       level: skill.level || 3,
-      domain: skill.domain || "external",
+      domain: payload.source || skill.domain || "external",
     };
 
     data.skills.push(newSkill);
