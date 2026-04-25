@@ -312,9 +312,34 @@ export default function HomePage() {
 
                 {/* 3. Learning Plan */}
                 <section>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-                    <span style={{ fontSize: "22px" }}>📅</span>
-                    <h2 className="section-title">7-Day Learning Plan</h2>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontSize: "22px" }}>📅</span>
+                      <h2 className="section-title" style={{ marginBottom: 0 }}>7-Day Learning Plan</h2>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(results.learningPlan, null, 2));
+                        const a = document.createElement('a');
+                        a.setAttribute("href", dataStr);
+                        a.setAttribute("download", "learning_plan.json");
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                      }}
+                      className="btn-primary"
+                      style={{
+                        padding: "8px 16px", fontSize: "13px",
+                        background: "rgba(139, 92, 246, 0.15)",
+                        border: "1px solid rgba(139, 92, 246, 0.3)",
+                        color: "var(--color-primary-light)",
+                        boxShadow: "none"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "rgba(139, 92, 246, 0.25)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "rgba(139, 92, 246, 0.15)"}
+                    >
+                      ⬇️ Download JSON
+                    </button>
                   </div>
                   <LearningPlan days={results.learningPlan || []} />
                 </section>
