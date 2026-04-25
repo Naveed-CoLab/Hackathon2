@@ -156,13 +156,15 @@ export default function HomePage() {
       source: s.source,
     });
 
-    newKnown.push({
-      id: s.skill.id,
-      name: s.skill.name,
-      needs: s.skill.needs || [],
-      source: s.source,
-      confidence: s.confidence,
-    });
+    if (!s.isMissing) {
+      newKnown.push({
+        id: s.skill.id,
+        name: s.skill.name,
+        needs: s.skill.needs || [],
+        source: s.source,
+        confidence: s.skill.confidence || 0.5,
+      });
+    }
   }
 
   // 🔥 IMPORTANT: update graph state

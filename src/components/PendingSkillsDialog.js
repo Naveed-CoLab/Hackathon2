@@ -52,8 +52,7 @@ export default function PendingSkillsDialog({
 
   const handleConfirm = () => {
     const toAdd = pendingSkills
-      .filter((p) => approved[p.skill.id])
-      .map((p) => p.skill);
+      .filter((p) => approved[p.skill.id]);
 
     onApprove(toAdd);
     onClose();

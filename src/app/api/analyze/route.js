@@ -90,17 +90,6 @@ export async function POST(request) {
     let parsed;
     try {
       parsed = JSON.parse(text);
-      if (parsed.provenance?.missingSource === "llm") {
-  parsed.pendingSkills = (parsed.missingSkills || []).map(s => ({
-    source: "llm",
-    skill: {
-      id: `llm_${s.name.toLowerCase().replace(/\s+/g, "_")}`,
-      name: s.name,
-      description: s.why || "",
-      confidence: 0.5,
-    }
-  }));
-}
     } catch {
       parsed = JSON.parse(text.replace(/^```json\s*/i, "").replace(/\s*```$/, "").trim());
     }
@@ -125,7 +114,28 @@ export async function POST(request) {
       missingSource: missingFromKG.length > 0 ? "kg" : "llm",
       knownSource: knownResolved.map(s => ({ id: s.id, source: s.source })),
     };
-    parsed.pendingSkills = pendingSkills; // skills awaiting user approval
+    parsed.pendingSkills = pendingSkills || []; // skills awaiting user approval
+
+    // Add LLM-generated missing skills to pending approvals
+    if (parsed.provenance.missingSource === "llm") {
+      const llmPending = (parsed.missingSkills || []).map(s => {
+        if (!s.id) {
+          s.id = `llm_${s.name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
+        }
+        return {
+          source: "llm",
+          isMissing: true,
+          skill: {
+            id: s.id,
+            name: s.name,
+            description: s.why || "Suggested by AI learning path.",
+            confidence: 0.5,
+            level: 2,
+          }
+        };
+      });
+      parsed.pendingSkills = [...parsed.pendingSkills, ...llmPending];
+    }
 
     if (!parsed.missingSkills || !parsed.learningPlan) {
       throw new Error("Invalid AI response structure");
