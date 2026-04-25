@@ -1,3 +1,6 @@
+# Demo Video
+https://drive.google.com/file/d/1dwPYtgQef52IZDbhhzuk2RodQ2AgytNQ/view?usp=sharing
+
 # 🧭 SkillGraph — AI-Powered Personal Skill Gap Navigator
 
 > *Tell us where you want to go. We'll map out exactly how to get there.*
