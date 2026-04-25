@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { savePath, loadPaths, deletePath } from "@/lib/pathStore";
 import PendingSkillsDialog from "@/components/PendingSkillsDialog";
-import { addSkillToKG } from "@/lib/skillGraph";
+import { addSkillToKG, mergePathIntoKG } from "@/lib/skillGraph";
 
 // Force graph requires window — disable SSR
 const Graph = dynamic(() => import("@/components/Graph"), { ssr: false });
@@ -29,6 +29,7 @@ export default function HomePage() {
   const [formData, setFormData] = useState(null);
   const [savedPaths, setSavedPaths] = useState([]);
   const [pendingSkills, setPendingSkills] = useState([]);
+  const [kgVersion, setKgVersion] = useState(0);
 
   // Load persisted state only on client after mount to avoid hydration mismatch
   React.useEffect(() => {
@@ -200,10 +201,14 @@ export default function HomePage() {
       {/* ── SKILL GRAPH TAB ── */}
       {activeTab === "graph" && (
   <div style={{ flex: 1, position: "relative" }}>
-    <Graph savedPaths={savedPaths} onDeletePath={(id) => {
-      deletePath(id);
-      setSavedPaths(loadPaths());
-    }} />
+    <Graph
+  savedPaths={savedPaths}
+  kgVersion={kgVersion}
+  onDeletePath={(id) => {
+    deletePath(id);
+    setSavedPaths(loadPaths());
+  }}
+/>
   </div>
 )}
 
@@ -259,13 +264,32 @@ export default function HomePage() {
             <div className="animate-fade-in" style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 24px 120px" }}>
               
               {/* Summary Hero */}
-             <div style={{ display: "flex", gap: "12px", justifyContent: "flex-start", marginTop: "28px", flexWrap: "wrap" }}>
+<div style={{ display: "flex", gap: "12px", justifyContent: "flex-start", marginTop: "28px", flexWrap: "wrap" }}>
   <button
     onClick={() => setActiveTab("graph")}
     className="btn-primary"
     style={{ background: "linear-gradient(135deg, #059669 0%, #10b981 100%)", boxShadow: "0 4px 24px rgba(16, 185, 129, 0.3)" }}
   >
     📊 View in Dashboard
+  </button>
+
+  <button
+    onClick={() => {
+  const added = mergePathIntoKG(
+    results.knownSkills || [],
+    results.missingSkills || []
+  );
+  if (added === 0) {
+    alert("All skills are already in the Knowledge Graph.");
+  } else {
+    setKgVersion(v => v + 1); // ← trigger Graph to reload
+    alert(`✅ Added ${added} new skill${added > 1 ? "s" : ""} to the Knowledge Graph.`);
+    setActiveTab("graph");
+  }
+}}
+onMouseLeave={e => e.currentTarget.style.background = "rgba(6, 182, 212, 0.12)"}
+  >
+    🧩 Add to Knowledge Graph
   </button>
 
   <button
@@ -291,13 +315,13 @@ export default function HomePage() {
     }}
     className="btn-primary"
     style={{
-      background: "rgba(139, 92, 246, 0.15)",
+      background: "rgba(139, 92, 246, 0.12)",
       border: "1px solid rgba(139, 92, 246, 0.3)",
       color: "var(--color-primary-light)",
       boxShadow: "none",
     }}
-    onMouseEnter={e => e.currentTarget.style.background = "rgba(139, 92, 246, 0.25)"}
-    onMouseLeave={e => e.currentTarget.style.background = "rgba(139, 92, 246, 0.15)"}
+    onMouseEnter={e => e.currentTarget.style.background = "rgba(139, 92, 246, 0.22)"}
+    onMouseLeave={e => e.currentTarget.style.background = "rgba(139, 92, 246, 0.12)"}
   >
     ⬇️ Download Path JSON
   </button>

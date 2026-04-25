@@ -87,11 +87,36 @@ export async function POST(request) {
     const text = data.choices?.[0]?.message?.content;
     if (!text) throw new Error("Empty response from AI");
 
+    // ── Parse LLM response ────────────────────────────────────────
     let parsed;
     try {
       parsed = JSON.parse(text);
     } catch {
       parsed = JSON.parse(text.replace(/^```json\s*/i, "").replace(/\s*```$/, "").trim());
+    }
+
+    // ── Normalize skill ids + build needs chain ───────────────────
+    // Fix LLM-generated ids like "MS1", "KS2" → stable slugs
+    (parsed.missingSkills || []).forEach(skill => {
+      if (!skill.id || skill.id.match(/^[A-Z]+\d+$/)) {
+        skill.id = `llm_${skill.name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
+      }
+    });
+    (parsed.knownSkills || []).forEach(skill => {
+      if (!skill.id || skill.id.match(/^[A-Z]+\d+$/)) {
+        skill.id = `llm_${skill.name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
+      }
+    });
+
+    // Build linear needs chain from order if no needs present
+    if (!parsed.missingSkills?.[0]?.needs?.length) {
+      const sorted = [...(parsed.missingSkills || [])].sort((a, b) => a.order - b.order);
+      sorted.forEach((skill, i) => {
+        skill.needs = i > 0
+          ? [sorted[i - 1].id]
+          : [];
+      });
+      parsed.missingSkills = sorted;
     }
 
     // ── Merge KG structure with LLM enrichment ───────────────────
@@ -109,39 +134,37 @@ export async function POST(request) {
       parsed.knownSkills = knownResolved;
     }
 
-    // ── Attach source provenance + pending approvals ──────────────
+    // ── Attach provenance ─────────────────────────────────────────
     parsed.provenance = {
       missingSource: missingFromKG.length > 0 ? "kg" : "llm",
       knownSource: knownResolved.map(s => ({ id: s.id, source: s.source })),
     };
-    parsed.pendingSkills = pendingSkills || []; // skills awaiting user approval
 
-    // Add LLM-generated missing skills to pending approvals
+    // ── Build pending skills for approval ────────────────────────
+    parsed.pendingSkills = pendingSkills || [];
+
     if (parsed.provenance.missingSource === "llm") {
-      const llmPending = (parsed.missingSkills || []).map(s => {
-        if (!s.id) {
-          s.id = `llm_${s.name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
-        }
-        return {
-          source: "llm",
-          isMissing: true,
-          skill: {
-            id: s.id,
-            name: s.name,
-            description: s.why || "Suggested by AI learning path.",
-            confidence: 0.5,
-            level: 2,
-          }
-        };
-      });
+      const llmPending = (parsed.missingSkills || []).map(s => ({
+        source: "llm",
+        isMissing: true,
+        skill: {
+          id: s.id,
+          name: s.name,
+          needs: s.needs || [],
+          description: s.why || "Suggested by AI learning path.",
+          confidence: 0.5,
+          level: 2,
+        },
+      }));
       parsed.pendingSkills = [...parsed.pendingSkills, ...llmPending];
     }
 
     if (!parsed.missingSkills || !parsed.learningPlan) {
       throw new Error("Invalid AI response structure");
     }
+
     console.log("📦 FINAL RESPONSE:", parsed);
-console.log("📌 PENDING SKILLS SENT TO UI:", parsed.pendingSkills);
+    console.log("📌 PENDING SKILLS SENT TO UI:", parsed.pendingSkills);
 
     return NextResponse.json(parsed);
   } catch (err) {

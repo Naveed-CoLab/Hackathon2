@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import SkillNode from "./SkillNode";
 import NodeDialog from "./NodeDialog";
-import { getAllSkills } from "@/lib/skillGraph";
+import { getAllSkills, getRuntimeSkills } from "@/lib/skillGraph";
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { ssr: false });
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), { ssr: false });
@@ -51,9 +51,10 @@ function hexToRgba(hex, alpha) {
 function buildGraphData(skills) {
   const nodes = skills.map(skill => ({
     id: skill.id,
-    name: skill.label,
+    name: skill.label || skill.name, // ← handle both shapes
     description: skill.description || "",
-    color: skill.domain === "art" ? "#6366f1" : "#0ea5e9",
+    color: skill.domain === "art" ? "#6366f1" : 
+           skill.domain === "external" ? "#f59e0b" : "#0ea5e9",
     domain: skill.domain,
     level: skill.level,
     needs: skill.needs || [],
@@ -68,8 +69,7 @@ function buildGraphData(skills) {
       links.push({
         source: prereqId,
         target: node.id,
-        color: "#94a3b8",
-        opacity: 0.2,
+        color: "rgba(148,163,184,0.2)",
         width: 1,
       });
     });
@@ -86,8 +86,7 @@ function getPathNodeIds(path) {
   return ids;
 }
 
-export default function Graph({ savedPaths = [], onDeletePath }) {
-  const fgRef = useRef();
+export default function Graph({ savedPaths = [], onDeletePath, kgVersion = 0 }) {  const fgRef = useRef();
   const containerRef = useRef();
 
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
@@ -115,10 +114,11 @@ export default function Graph({ savedPaths = [], onDeletePath }) {
   }, []);
 
   // Load full KG from skills.json on mount
-  useEffect(() => {
-    const skills = getAllSkills();
-    setGraphData(buildGraphData(skills));
-  }, []);
+ useEffect(() => {
+  const skills = getAllSkills();
+  const runtime = getRuntimeSkills(); // ← also load runtime additions
+  setGraphData(buildGraphData([...skills, ...runtime]));
+}, [kgVersion]); // ← re-runs when kgVersion increments
 
   // Resize observer
   useEffect(() => {

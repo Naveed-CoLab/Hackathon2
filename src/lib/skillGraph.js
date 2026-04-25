@@ -149,3 +149,48 @@ export function skillExistsByName(name) {
     s.label.toLowerCase().replace(/[^a-z0-9]/g, "") === normalized
   );
 }
+
+/**
+ * Merges all skills from a learning path into the runtime KG.
+ * Skips duplicates. Returns count of newly added skills.
+ */
+export function mergePathIntoKG(knownSkills = [], missingSkills = []) {
+  let added = 0;
+
+  const allSkills = [
+    ...knownSkills.map(s => ({ ...s, type: "known" })),
+    ...missingSkills.map(s => ({ ...s, type: "missing" })),
+  ];
+
+  for (const skill of allSkills) {
+    if (!skill?.id || !skill?.name) continue;
+    if (SKILL_MAP[skill.id] || skillExistsByName(skill.name)) continue;
+
+    // Try to resolve needs to real KG ids by name-matching
+    const resolvedNeeds = (skill.needs || []).map(needId => {
+      // Already a valid KG id
+      if (SKILL_MAP[needId]) return needId;
+      // Try name match
+      const matched = matchSkillId(needId.replace(/_/g, " "));
+      return matched || needId;
+    });
+
+    // Also try to connect to KG by matching skill name to existing nodes
+    const existingMatch = matchSkillId(skill.name);
+    if (existingMatch) continue; // already exists under different id
+
+    SKILL_MAP[skill.id] = {
+      id: skill.id,
+      label: skill.name,
+      description: skill.why || skill.description || "",
+      needs: resolvedNeeds,
+      domain: "external",
+      level: skill.level || 3,
+    };
+
+    runtimeSkills.set(skill.id, SKILL_MAP[skill.id]);
+    added++;
+  }
+
+  return added;
+}
