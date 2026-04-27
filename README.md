@@ -1,7 +1,7 @@
 # Demo Video
 https://drive.google.com/file/d/1dwPYtgQef52IZDbhhzuk2RodQ2AgytNQ/view?usp=sharing
 
-# 🧭 SkillGraph — AI-Powered Personal Skill Gap Navigator
+# 🧭 SkillMap — AI-Powered Personal Skill Gap Navigator
 
 > *Tell us where you want to go. We'll map out exactly how to get there.*
 
@@ -13,7 +13,7 @@ Built for a hackathon. Designed like a product.
 
 ## ✨ What it does
 
-You tell SkillGraph two things: **your goal** (e.g. *"Character Design"*, *"Machine Learning"*) and **what you already know** (e.g. *"I know basic HTML and some Photoshop"*).
+You tell SkillMap three things: **your goal** (e.g. *"Character Design"*, *"Machine Learning"*), **what you already know** (e.g. *"I know basic HTML and some Photoshop"*) and **free time in a day** (e.g. *"30 mins, 1 hour"*)..
 
 It then:
 
