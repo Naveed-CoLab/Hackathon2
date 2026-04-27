@@ -131,7 +131,7 @@ export default function HomePage() {
             background: "linear-gradient(135deg, #c084fc, #818cf8)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           }}>
-            SkillGraph
+            SkillMap
           </span>
         </div>
         {pendingSkills.length > 0 && (
